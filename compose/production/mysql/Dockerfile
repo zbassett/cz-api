@@ -1,4 +1,4 @@
-FROM mysql:8.0.29
+FROM mysql:8.2.0
 
 COPY ./compose/production/mysql/maintenance /usr/local/bin/maintenance
 RUN chmod +x /usr/local/bin/maintenance/*
