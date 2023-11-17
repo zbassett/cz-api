@@ -1,0 +1,52 @@
+version: '3'
+
+volumes:
+  cz_api_local_mysql_data: {}
+  cz_api_local_mysql_data_backups: {}
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: cz_api_local_django
+    container_name: cz_api_local_django
+    platform: linux/x86_64
+    depends_on:
+      - mysql
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.mysql
+    ports:
+      - "8001:8000"
+    command: /start
+  mysql:
+    build:
+      context: .
+      dockerfile: ./compose/production/mysql/Dockerfile
+    image: cz_api_production_mysql
+    container_name: mysql
+    volumes:
+      - cz_api_local_mysql_data:/var/lib/mysql:z
+      - cz_api_local_mysql_data_backups:/backups:z
+    env_file:
+      - ./.envs/.local/.mysql
+
+  docs:
+    image: cz_api_local_docs
+    container_name: cz_api_local_docs
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: ./compose/local/docs/Dockerfile
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - ./docs:/docs:z
+      - ./config:/app/config:z
+      - ./cz_api:/app/cz_api:z
+    ports:
+      - "9000:9000"
+    command: /start-docs
