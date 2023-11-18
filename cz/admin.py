@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.db import models
 
-from .models import Player, Team, Event, Eventtournament, Clubs
+from .models import Player, Team, Event, Eventtournament, Clubs, Tournamenttype, Tournament, Eventtournament, Tournamentdraw
 
 
 class PlayerAdmin(admin.ModelAdmin):
@@ -61,7 +61,43 @@ class ClubsAdmin(admin.ModelAdmin):
     ordering = ('name', 'city', 'province', 'country', 'sheets')
 
 
+class EventtournamentAdmin(admin.ModelAdmin):
+    list_per_page = 20
+    list_display = ('__str__', 'event', 'tournament')
+    # list_filter = ('country', 'created_at', 'updated_at')
+    search_fields = ('event', 'tournament')
+    ordering = ('event', 'tournament')
+
+
+class TournamenttypeAdmin(admin.ModelAdmin):
+    list_per_page = 20
+    list_display = ('tournamenttype', 'events')
+    # list_filter = ('country', 'created_at', 'updated_at')
+    search_fields = ('tournamenttype', 'events')
+    ordering = ('tournamenttype', 'events')
+
+
+class TournamentAdmin(admin.ModelAdmin):
+    list_per_page = 20
+    list_display = ('tournamentname', 'tournamentyear', 'tournamentdescription')
+    # list_filter = ('country', 'created_at', 'updated_at')
+    search_fields = ('tournamentname', 'tournamentyear', 'tournamentdescription')
+    ordering = ('tournamentname', 'tournamentyear', 'tournamentdescription')
+
+
+class TournamentdrawAdmin(admin.ModelAdmin):
+    list_per_page = 20
+    list_display = ('tournamentid', 'drawname', 'drawdatetime')
+    # list_filter = ('country', 'created_at', 'updated_at')
+    search_fields = ('tournamentid', 'drawname', 'drawdatetime')
+    ordering = ('tournamentid', 'drawname', 'drawdatetime')
+
+
 admin.site.register(Player, PlayerAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Clubs, ClubsAdmin)
+admin.site.register(Eventtournament, EventtournamentAdmin)
+admin.site.register(Tournamenttype, TournamenttypeAdmin)
+admin.site.register(Tournament, TournamentAdmin)
+admin.site.register(Tournamentdraw, TournamentdrawAdmin)

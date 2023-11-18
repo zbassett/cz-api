@@ -291,6 +291,9 @@ class Tournament(models.Model):
         managed = False
         db_table = 'tournament'
 
+    def __str__(self):
+        return f"{self.tournamentname} - {self.tournamentyear}"
+
 
 class Eventtournament(models.Model):
     eventid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='eventid')
