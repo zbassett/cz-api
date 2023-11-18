@@ -6,6 +6,7 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.urls import reverse
 
 
 class Player(models.Model):
@@ -59,6 +60,8 @@ class Player(models.Model):
         return f"{self.firstname} {self.lastname}"
 
 
+
+
 class Team(models.Model):
     teamid = models.IntegerField(primary_key=True)
     eventid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='eventid')
@@ -108,19 +111,13 @@ class Team(models.Model):
     def __str__(self):
         # Check if the skip is set, and return the skip's last name as the team name
         if self.skip:
-            return self.skip.lastname
-        else:
-            # Provide a default string or the teamid if the skip is not set
-            return f"Team {self.teamid}"
-        
-    @property
-    def name(self):
-        # Check if the skip is set, and return the skip's last name as the team name
-        if self.skip:
             return f"Team {self.skip.lastname}"
         else:
             # Provide a default string or the teamid if the skip is not set
             return f"Team {self.teamid}"
+        
+    # @property
+
         
 
 class Event(models.Model):
@@ -199,17 +196,14 @@ class Event(models.Model):
         managed = False
         db_table = 'event'
 
+    def __str__(self):
+        if self.startdate:
+            return f"{self.eventname} - {self.startdate.strftime('%b %Y')}"
+        else:
+            return f"{self.eventname}"
 
-class Eventtournament(models.Model):
-    eventid = models.IntegerField()
-    tournamentid = models.IntegerField()
-    tournamentlabel = models.CharField(max_length=50)
-    classid = models.IntegerField()
-    priority = models.IntegerField()
 
-    class Meta:
-        managed = False
-        db_table = 'eventtournament'
+
 
 
 class Clubs(models.Model):
@@ -249,5 +243,87 @@ class Clubs(models.Model):
     class Meta:
         managed = False
         db_table = 'clubs'
+        verbose_name = "Club"
+        verbose_name_plural = "Clubs"
+        
+    def __str__(self):
+        return f"{self.name}"
+    
+
+class Tournamenttype(models.Model):
+    tournamenttypeid = models.AutoField(primary_key=True)
+    format = models.IntegerField()
+    tournamenttype = models.CharField(max_length=100)
+    filename = models.CharField(max_length=50)
+    events = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'tournamenttype'
+
+    def __str__(self):
+        return f"{self.tournamenttype}"
 
 
+class Tournament(models.Model):
+    tournamentid = models.AutoField(primary_key=True)
+    tournamenttypeid = models.ForeignKey('Tournamenttype', on_delete=models.DO_NOTHING, db_column='tournamenttypeid')
+    tournamentyear = models.CharField(max_length=15)
+    tournamentname = models.CharField(max_length=100)
+    tournamenttitle = models.CharField(max_length=25)
+    tournamentdescription = models.TextField()
+    status = models.IntegerField()
+    clubid = models.IntegerField()
+    gametype = models.IntegerField()
+    numends = models.IntegerField()
+    expanded_record = models.IntegerField()
+    freeguardid = models.IntegerField()
+    doubles = models.IntegerField()
+    eventid = models.IntegerField()
+    allowtie = models.IntegerField()
+    advanceddrops = models.IntegerField()
+    hightraffic = models.IntegerField()
+    bracketcolour = models.CharField(max_length=6)
+    statsrun = models.IntegerField()
+    hidedraw = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'tournament'
+
+
+class Eventtournament(models.Model):
+    eventid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='eventid')
+    tournamentid = models.ForeignKey('Tournament', on_delete=models.DO_NOTHING, db_column='tournamentid')
+    tournamentlabel = models.CharField(max_length=50)
+    classid = models.IntegerField()
+    priority = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'eventtournament'
+        unique_together = ('eventid', 'tournamentid')
+
+
+class Tournamentdraw(models.Model):
+    tournamentid = models.ForeignKey('Tournament', on_delete=models.DO_NOTHING, db_column='tournamentid')
+    drawid = models.IntegerField()
+    drawname = models.CharField(max_length=50)
+    priority = models.IntegerField()
+    active = models.IntegerField()
+    active_games = models.IntegerField()
+    lastscoresupdate = models.IntegerField()
+    drawdatetime = models.DateTimeField()
+    drawtime = models.IntegerField()
+    drawdatetime2 = models.DateTimeField()
+    drawtime2 = models.IntegerField()
+    startdraw = models.IntegerField()
+    maxteams = models.IntegerField()
+    filled = models.IntegerField()
+    draw_pair = models.IntegerField()
+    official = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'tournamentdraw'
+        unique_together = ('tournamentid', 'drawid')
