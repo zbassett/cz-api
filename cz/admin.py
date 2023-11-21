@@ -63,10 +63,10 @@ class ClubsAdmin(admin.ModelAdmin):
 
 class EventtournamentAdmin(admin.ModelAdmin):
     list_per_page = 20
-    list_display = ('__str__', 'event', 'tournament')
+    list_display = ('__str__', 'eventid', 'tournamentid')
     # list_filter = ('country', 'created_at', 'updated_at')
-    search_fields = ('event', 'tournament')
-    ordering = ('event', 'tournament')
+    search_fields = ('eventid', 'tournamentid')
+    ordering = ('eventid', 'tournamentid')
 
 
 class TournamenttypeAdmin(admin.ModelAdmin):

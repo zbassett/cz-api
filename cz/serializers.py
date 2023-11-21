@@ -1,7 +1,26 @@
 from rest_framework import serializers
-from .models import Player, Team, Event
+from .models import Player, Team, Event, Eventtournament, Tournamenttype, Tournament, Tournamentdraw, Clubs
 from django.db import models
 from django.urls import reverse, NoReverseMatch
+
+
+class ClubsListSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Clubs
+        fields = ['clubid', 'name', 'city', 'province', 'country', 'sheets', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:clubs-detail', 'lookup_field': 'clubid'}
+        }
+
+
+class ClubsDetailSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Clubs
+        fields = '__all__'  # Or customize the fields as needed
+        extra_kwargs = {
+            'url': {'view_name': 'api:clubs-detail', 'lookup_field': 'clubid'}
+        }
+
 
 
 class PlayerListSerializer(serializers.HyperlinkedModelSerializer):
@@ -94,18 +113,9 @@ class TeamDetailSerializer(serializers.HyperlinkedModelSerializer):
         # source='spare'
     )
 
-        
-
-
     class Meta:
         model = Team
-        fields = [
-            'teamid', 'eventid', 'eventtypeid', 'drawid', 'status', 'fiveplayerteam', 'teamage', 'teamname_playerid', 
-            'skip', 'fourth', 'third', 'second', 'lead', 'spare', 'coach', 'website', 'blogrss', 'twitter', 
-            'twitter_rating', 'facebook', 'facebook_rating', 'facebookrss', 'youtube', 'city', 'sectionid', 
-            'clubid', 'teamname', 'teamname_short', 'counter', 'dateline', 'submittedby', 'submittedemail', 
-            'paid', 'paid_comments', 'sponsor', 'sponsorurl', 'photo', 'photodesc', 'tier', 'notes'
-        ]
+        fields = [field.name for field in Team._meta.fields] + ['skip', 'fourth', 'third', 'second', 'lead', 'spare']
         extra_kwargs = {
             'url': {'view_name': 'api:team-detail', 'lookup_field': 'teamid'}
         }
@@ -153,6 +163,116 @@ class EventDetailSerializer(serializers.HyperlinkedModelSerializer):
         fields = '__all__'  # Or customize the fields as needed
         extra_kwargs = {
             'url': {'view_name': 'api:event-detail', 'lookup_field': 'eventid'}
+        }
+
+
+# TODO: figure out what to do with this serializer since the table has a composite key
+# class EventtournamentSerializer(serializers.HyperlinkedModelSerializer):
+#     eventid = serializers.HyperlinkedRelatedField(
+#         view_name='api:event-detail',
+#         lookup_field='eventid',
+#         queryset=Event.objects.all(),
+#         # source='eventid'
+#     )
+#     tournamentid = serializers.HyperlinkedRelatedField(
+#         view_name='api:tournament-detail',
+#         lookup_field='tournamentid',
+#         queryset=Tournament.objects.all(),
+#         # source='tournamentid'
+#     )
+#     class Meta:
+#         model = Eventtournament
+#         fields = ['eventid', 'tournamentid', 'tournamentlabel', 'classid', 'priority', 'url']
+#         extra_kwargs = {
+#             'url': {'view_name': 'api:eventtournament-detail', 'lookup_field': 'eventid'}
+#         }
+
+
+class EventtournamentDetailSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Eventtournament
+        fields = '__all__'  # Or customize the fields as needed
+        extra_kwargs = {
+            'url': {'view_name': 'api:eventtournament-detail', 'lookup_field': 'eventid'}
+        }
+
+
+class TournamenttypeListSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Tournamenttype
+        fields = ['tournamenttypeid', 'tournamenttype', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamenttype-detail', 'lookup_field': 'tournamenttypeid'}
+        }
+
+
+class TournamenttypeDetailSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Tournamenttype
+        fields = '__all__'  # Or customize the fields as needed
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamenttype-detail', 'lookup_field': 'tournamenttypeid'}
+        }
+
+
+class TournamentListSerializer(serializers.HyperlinkedModelSerializer):
+    tournamenttypeid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournamenttype-detail',
+        lookup_field='tournamenttypeid',
+        queryset=Tournamenttype.objects.all(),
+        # source='tournamenttypeid'
+    )
+    class Meta:
+        model = Tournament
+        fields = ['tournamentid', 'tournamentname', 'tournamenttypeid', 'tournamentyear', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournament-detail', 'lookup_field': 'tournamentid'}
+        }
+
+
+class TournamentDetailSerializer(serializers.HyperlinkedModelSerializer):
+    tournamenttypeid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournamenttype-detail',
+        lookup_field='tournamenttypeid',
+        queryset=Tournamenttype.objects.all(),
+        # source='tournamenttypeid'
+    )
+
+    class Meta:
+        model = Tournament
+        fields = [field.name for field in Tournament._meta.fields] + ['tournamenttypeid']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournament-detail', 'lookup_field': 'tournamentid'}
+        }
+
+
+class TournamentdrawListSerializer(serializers.HyperlinkedModelSerializer):
+    tournamentid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournament-detail',
+        lookup_field='tournamentid',
+        queryset=Tournament.objects.all(),
+        # source='tournamentid'
+    )
+    class Meta:
+        model = Tournamentdraw
+        fields = ['tournamentid', 'drawid', 'drawname', 'drawdatetime', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamentdraw-detail', 'lookup_field': 'tournamentid'}
+        }
+
+
+class TournamentdrawDetailSerializer(serializers.HyperlinkedModelSerializer):
+    tournamentid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournament-detail',
+        lookup_field='tournamentid',  # TODO: actually an eventid value
+        queryset=Tournament.objects.all(),
+        # source='tournamentid'
+    )
+    class Meta:
+        model = Tournamentdraw
+        fields = [field.name for field in Tournamentdraw._meta.fields] + ['tournamentid']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamentdraw-detail', 'lookup_field': 'tournamentid'}
         }
 
         
