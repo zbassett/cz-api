@@ -1094,24 +1094,7 @@ class Eventlevel(models.Model):
         db_table = 'eventlevel'
 
 
-class Eventlink(models.Model):
-    eventid = models.IntegerField()
-    eventtypeid = models.IntegerField()
-    typetier = models.IntegerField()
-    special = models.IntegerField()
-    level = models.IntegerField()
-    regionid = models.IntegerField()
-    rr_tournamentid = models.IntegerField()
-    tb_tournamentid = models.IntegerField()
-    po_tournamentid = models.IntegerField()
-    featuredweek = models.IntegerField()
-    fantasy = models.IntegerField()
-    invoice = models.IntegerField()
-    dataconvert = models.IntegerField()
 
-    class Meta:
-        managed = False
-        db_table = 'eventlink'
 
 
 class Eventpair(models.Model):
@@ -5897,14 +5880,7 @@ class Tournamentflightdrawteam(models.Model):
         db_table = 'tournamentflightdrawteam'
 
 
-class Tournamentgame(models.Model):
-    tournamentid = models.ForeignKey(Tournament, models.DO_NOTHING, db_column='tournamentid')
-    gameid = models.ForeignKey(Scoregame, models.DO_NOTHING, db_column='gameid')
-    gamelinkid = models.IntegerField()
 
-    class Meta:
-        managed = False
-        db_table = 'tournamentgame'
 
 
 class Tournamentgametype(models.Model):

@@ -33,20 +33,23 @@ services:
       - cz_api_local_mysql_data_backups:/backups:z
     env_file:
       - ./.envs/.local/.mysql
-
-  docs:
-    image: cz_api_local_docs
-    container_name: cz_api_local_docs
-    platform: linux/x86_64
-    build:
-      context: .
-      dockerfile: ./compose/local/docs/Dockerfile
-    env_file:
-      - ./.envs/.local/.django
-    volumes:
-      - ./docs:/docs:z
-      - ./config:/app/config:z
-      - ./cz_api:/app/cz_api:z
     ports:
-      - "9000:9000"
-    command: /start-docs
+      - "3306:3306"
+    command: --ssl=0
+
+  # docs:
+  #   image: cz_api_local_docs
+  #   container_name: cz_api_local_docs
+  #   platform: linux/x86_64
+  #   build:
+  #     context: .
+  #     dockerfile: ./compose/local/docs/Dockerfile
+  #   env_file:
+  #     - ./.envs/.local/.django
+  #   volumes:
+  #     - ./docs:/docs:z
+  #     - ./config:/app/config:z
+  #     - ./cz_api:/app/cz_api:z
+  #   ports:
+  #     - "9000:9000"
+  #   command: /start-docs

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Player, Team, Event, Eventtournament, Tournamenttype, Tournament, Tournamentdraw, Clubs
+from .models import Player, Team, Event, Eventlink, Tournamenttype, Tournament, Tournamentdraw, Clubs
 from django.db import models
 from django.urls import reverse, NoReverseMatch
 
@@ -158,6 +158,14 @@ class EventListSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class EventDetailSerializer(serializers.HyperlinkedModelSerializer):
+    rr_tournamentid = serializers.SerializerMethodField(read_only=True)
+    tb_tournamentid = serializers.SerializerMethodField(read_only=True)
+    po_tournamentid = serializers.SerializerMethodField(read_only=True)
+    rr_tournamentid_url = serializers.SerializerMethodField(read_only=True)
+    tb_tournamentid_url = serializers.SerializerMethodField(read_only=True)
+    po_tournamentid_url = serializers.SerializerMethodField(read_only=True)
+
+
     class Meta:
         model = Event
         fields = '__all__'  # Or customize the fields as needed
@@ -165,37 +173,66 @@ class EventDetailSerializer(serializers.HyperlinkedModelSerializer):
             'url': {'view_name': 'api:event-detail', 'lookup_field': 'eventid'}
         }
 
+    # get the  rr_tournamentid, tb_tournamentid, and po_tournamentid fields from the Eventlink model
+    # and return the tournamentid values for each
+    def get_tournament_id(self, event_link, field_name):
+        # print(f"get_tournament_id: {event_link} {field_name}")
 
-# TODO: figure out what to do with this serializer since the table has a composite key
-# class EventtournamentSerializer(serializers.HyperlinkedModelSerializer):
-#     eventid = serializers.HyperlinkedRelatedField(
-#         view_name='api:event-detail',
-#         lookup_field='eventid',
-#         queryset=Event.objects.all(),
-#         # source='eventid'
-#     )
-#     tournamentid = serializers.HyperlinkedRelatedField(
-#         view_name='api:tournament-detail',
-#         lookup_field='tournamentid',
-#         queryset=Tournament.objects.all(),
-#         # source='tournamentid'
-#     )
-#     class Meta:
-#         model = Eventtournament
-#         fields = ['eventid', 'tournamentid', 'tournamentlabel', 'classid', 'priority', 'url']
-#         extra_kwargs = {
-#             'url': {'view_name': 'api:eventtournament-detail', 'lookup_field': 'eventid'}
-#         }
+        try: 
+            tournament_link = getattr(event_link, field_name, None)
+        except Exception as e:
+            # print(f"Exception: {e}")
+            return None
 
+        # Check if tournament_link is None or 0 (indicating no valid foreign key)
+        if tournament_link is None or tournament_link.pk == 0:
+            return None
 
-class EventtournamentDetailSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Eventtournament
-        fields = '__all__'  # Or customize the fields as needed
-        extra_kwargs = {
-            'url': {'view_name': 'api:eventtournament-detail', 'lookup_field': 'eventid'}
-        }
+        try:
+            # Fetch the tournament and return its ID if it exists
+            return Tournament.objects.get(pk=tournament_link.pk).tournamentid
+        except Tournament.DoesNotExist:
+            return None
 
+    def get_rr_tournamentid(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        return self.get_tournament_id(event_link, 'rr_tournamentid') if event_link else None
+
+    def get_tb_tournamentid(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        return self.get_tournament_id(event_link, 'tb_tournamentid') if event_link else None
+
+    def get_po_tournamentid(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        return self.get_tournament_id(event_link, 'po_tournamentid') if event_link else None
+    
+    def get_rr_tournamentid_url(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        tournament_id = self.get_tournament_id(event_link, 'rr_tournamentid')
+        
+        if tournament_id:
+            url_path = reverse("api:tournament-detail", args=[tournament_id])
+            base_url = self.context['request'].build_absolute_uri('/')[:-1]
+            return base_url + url_path
+        return None
+    
+    def get_tb_tournamentid_url(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        tournament_id = self.get_tournament_id(event_link, 'tb_tournamentid')
+        if tournament_id:
+            url_path = reverse("api:tournament-detail", args=[tournament_id])
+            base_url = self.context['request'].build_absolute_uri('/')[:-1]
+            return base_url + url_path
+        return None
+    
+    def get_po_tournamentid_url(self, obj):
+        event_link = Eventlink.objects.filter(eventid=obj).first()
+        tournament_id = self.get_tournament_id(event_link, 'po_tournamentid')
+        if tournament_id:
+            url_path = reverse("api:tournament-detail", args=[tournament_id])
+            base_url = self.context['request'].build_absolute_uri('/')[:-1]
+            return base_url + url_path
+        return None
 
 class TournamenttypeListSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

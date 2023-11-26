@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.db import models
 
-from .models import Player, Team, Event, Eventtournament, Clubs, Tournamenttype, Tournament, Eventtournament, Tournamentdraw
+from .models import Player, Team, Event, Clubs, Tournamenttype, Tournament, Tournamentdraw
 
 
 class PlayerAdmin(admin.ModelAdmin):
@@ -61,12 +61,7 @@ class ClubsAdmin(admin.ModelAdmin):
     ordering = ('name', 'city', 'province', 'country', 'sheets')
 
 
-class EventtournamentAdmin(admin.ModelAdmin):
-    list_per_page = 20
-    list_display = ('__str__', 'eventid', 'tournamentid')
-    # list_filter = ('country', 'created_at', 'updated_at')
-    search_fields = ('eventid', 'tournamentid')
-    ordering = ('eventid', 'tournamentid')
+
 
 
 class TournamenttypeAdmin(admin.ModelAdmin):
@@ -97,7 +92,6 @@ admin.site.register(Player, PlayerAdmin)
 admin.site.register(Team, TeamAdmin)
 admin.site.register(Event, EventAdmin)
 admin.site.register(Clubs, ClubsAdmin)
-admin.site.register(Eventtournament, EventtournamentAdmin)
 admin.site.register(Tournamenttype, TournamenttypeAdmin)
 admin.site.register(Tournament, TournamentAdmin)
 admin.site.register(Tournamentdraw, TournamentdrawAdmin)

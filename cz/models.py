@@ -295,21 +295,43 @@ class Tournament(models.Model):
         return f"{self.tournamentname} - {self.tournamentyear}"
 
 
-class Eventtournament(models.Model):
+# I mistakenly thought this was a the link between Event and Tournament.
+# Instead, that link is made with the EventLink model below.
+# class Eventtournament(models.Model):
+#     eventid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='eventid')
+#     tournamentid = models.ForeignKey('Tournament', on_delete=models.DO_NOTHING, db_column='tournamentid')
+#     tournamentlabel = models.CharField(max_length=50)
+#     classid = models.IntegerField()
+#     priority = models.IntegerField()
+
+#     class Meta:
+#         managed = False
+#         db_table = 'eventtournament'
+#         unique_together = ('eventid', 'tournamentid')
+
+
+class Eventlink(models.Model):
     eventid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='eventid')
-    tournamentid = models.ForeignKey('Tournament', on_delete=models.DO_NOTHING, db_column='tournamentid')
-    tournamentlabel = models.CharField(max_length=50)
-    classid = models.IntegerField()
-    priority = models.IntegerField()
+    eventtypeid = models.IntegerField()
+    typetier = models.IntegerField()
+    special = models.IntegerField()
+    level = models.IntegerField()
+    regionid = models.IntegerField()
+    rr_tournamentid = models.ForeignKey('Tournament', related_name='rr_tournamentid', on_delete=models.DO_NOTHING, db_column='rr_tournamentid', blank=True, null=True)
+    tb_tournamentid = models.ForeignKey('Tournament', related_name='tb_tournamentid', on_delete=models.DO_NOTHING, db_column='tb_tournamentid', blank=True, null=True)
+    po_tournamentid = models.ForeignKey('Tournament', related_name='po_tournamentid', on_delete=models.DO_NOTHING, db_column='po_tournamentid', blank=True, null=True)
+    featuredweek = models.IntegerField()
+    fantasy = models.IntegerField()
+    invoice = models.IntegerField()
+    dataconvert = models.IntegerField()
 
     class Meta:
         managed = False
-        db_table = 'eventtournament'
-        unique_together = ('eventid', 'tournamentid')
+        db_table = 'eventlink'
 
 
 class Tournamentdraw(models.Model):
-    tournamentid = models.ForeignKey('Tournament', on_delete=models.DO_NOTHING, db_column='tournamentid')
+    tournamentid = models.ForeignKey('Event', on_delete=models.DO_NOTHING, db_column='tournamentid')
     drawid = models.IntegerField()
     drawname = models.CharField(max_length=50)
     priority = models.IntegerField()
@@ -330,3 +352,55 @@ class Tournamentdraw(models.Model):
         managed = False
         db_table = 'tournamentdraw'
         unique_together = ('tournamentid', 'drawid')
+
+
+class Scoregame(models.Model):
+    gameid = models.IntegerField(primary_key=True)
+    drawid = models.IntegerField()
+    teamid1 = models.IntegerField()
+    teamid2 = models.IntegerField()
+    teamid_top = models.IntegerField()
+    teamid_bottom = models.IntegerField()
+    profileid1 = models.IntegerField()
+    profileid2 = models.IntegerField()
+    hammer = models.IntegerField()
+    numends = models.IntegerField()
+    teamid1_colour = models.CharField(max_length=10)
+    teamid2_colour = models.CharField(max_length=10)
+    teamid1_draw = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid2_draw = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid1_draw_two = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid2_draw_two = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid1_draw_three = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid2_draw_three = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid1_draw_four = models.DecimalField(max_digits=9, decimal_places=2)
+    teamid2_draw_four = models.DecimalField(max_digits=9, decimal_places=2)
+    skipid1 = models.IntegerField()
+    fourthid1 = models.IntegerField()
+    thirdid1 = models.IntegerField()
+    sectionid1 = models.IntegerField()
+    skipid2 = models.IntegerField()
+    fourthid2 = models.IntegerField()
+    thirdid2 = models.IntegerField()
+    sectionid2 = models.IntegerField()
+    counter = models.IntegerField()
+    local_gameid = models.IntegerField()
+    fantasy_email = models.IntegerField()
+    tweet_end_by_end = models.IntegerField()
+    threadid = models.IntegerField()
+    length = models.IntegerField()
+    streamcount = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'scoregame'
+
+
+class Tournamentgame(models.Model):
+    tournamentid = models.ForeignKey(Tournament, models.DO_NOTHING, db_column='tournamentid')
+    gameid = models.ForeignKey(Scoregame, models.DO_NOTHING, db_column='gameid')
+    gamelinkid = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'tournamentgame'
