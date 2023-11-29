@@ -313,3 +313,24 @@ class TournamentdrawDetailSerializer(serializers.HyperlinkedModelSerializer):
         }
 
         
+# viewsets for custom SQL queries
+class EventQueryParamsSerializer(serializers.Serializer):
+    start_date_begin = serializers.DateField(required=False)
+    start_date_end = serializers.DateField(required=False)
+
+class EventDataSerializer(serializers.Serializer):
+    EventType = serializers.CharField(max_length=100)
+    EventTypeID = serializers.IntegerField()
+    Division = serializers.CharField(max_length=100)
+    EventYear = serializers.IntegerField()
+    EventWeek = serializers.IntegerField()
+    EventID = serializers.IntegerField()
+    EventName = serializers.CharField(max_length=200)
+    ShortName = serializers.CharField(max_length=100)
+    City = serializers.CharField(max_length=100)
+    Region = serializers.CharField(max_length=100)
+    RegionPrefix = serializers.CharField(max_length=50)
+    CountryFlag = serializers.URLField()
+    LocalStartDate = serializers.DateField()
+    LocalEndDate = serializers.DateField()
+    LocalUTC = serializers.IntegerField()

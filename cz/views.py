@@ -32,8 +32,8 @@ from .serializers import (
     PlayerListSerializer, PlayerDetailSerializer, TeamListSerializer, TeamDetailSerializer,
     EventListSerializer, EventDetailSerializer, 
     ClubsListSerializer, ClubsDetailSerializer, TournamenttypeListSerializer, TournamenttypeDetailSerializer,
-    TournamentListSerializer, TournamentDetailSerializer, TournamentdrawListSerializer, TournamentdrawDetailSerializer
-
+    TournamentListSerializer, TournamentDetailSerializer, TournamentdrawListSerializer, TournamentdrawDetailSerializer,
+    EventQueryParamsSerializer, EventDataSerializer
 )
 from .filters import ClubsFilter
 
@@ -133,27 +133,7 @@ class TournamentdrawModelViewSet(viewsets.ModelViewSet):
         return TournamentdrawDetailSerializer
     
 
-# viewsets for custom SQL queries
-class EventQueryParamsSerializer(serializers.Serializer):
-    start_date = serializers.DateField(required=False)
-    end_date = serializers.DateField(required=False)
 
-class EventDataSerializer(serializers.Serializer):
-    EventType = serializers.CharField(max_length=100)
-    EventTypeID = serializers.IntegerField()
-    Division = serializers.CharField(max_length=100)
-    EventYear = serializers.IntegerField()
-    EventWeek = serializers.IntegerField()
-    EventID = serializers.IntegerField()
-    EventName = serializers.CharField(max_length=200)
-    ShortName = serializers.CharField(max_length=100)
-    City = serializers.CharField(max_length=100)
-    Region = serializers.CharField(max_length=100)
-    RegionPrefix = serializers.CharField(max_length=50)
-    CountryFlag = serializers.URLField()
-    LocalStartDate = serializers.DateField()
-    LocalEndDate = serializers.DateField()
-    LocalUTC = serializers.IntegerField()
 
 
 
@@ -207,8 +187,13 @@ class EventInfoViewset(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        print(f"data: {data}")
+
         start_date_begin = data.get('start_date_begin', (datetime.now() - timedelta(days=30)).date())
         start_date_end = data.get('start_date_end', (datetime.now() + timedelta(days=30)).date())
+
+        print(f"start_date_begin: {start_date_begin}")
+        print(f"start_date_end: {start_date_end}")
 
         sql = """
             SELECT t.eventtype AS EventType, t.eventtypeid AS EventTypeID, t.division AS Division, e.eventyear AS EventYear, w.tourweek AS EventWeek, e.eventid AS EventID, e.eventname AS EventName, e.shortname AS ShortName, e.city AS City, s.section AS Region, s.prefix AS RegionPrefix, CONCAT('https://www.curlingzone.com/forums/images/flag/', e.sectionid, '_flag.gif') AS CountryFlag, e.startdate AS LocalStartDate, e.enddate AS LocalEndDate, x.offset AS LocalUTC
