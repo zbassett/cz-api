@@ -192,8 +192,8 @@ class EventInfoViewset(viewsets.ViewSet):
         start_date_begin = data.get('start_date_begin', (datetime.now() - timedelta(days=30)).date())
         start_date_end = data.get('start_date_end', (datetime.now() + timedelta(days=30)).date())
 
-        print(f"start_date_begin: {start_date_begin}")
-        print(f"start_date_end: {start_date_end}")
+        # print(f"start_date_begin: {start_date_begin}")
+        # print(f"start_date_end: {start_date_end}")
 
         sql = """
             SELECT t.eventtype AS EventType, t.eventtypeid AS EventTypeID, t.division AS Division, e.eventyear AS EventYear, w.tourweek AS EventWeek, e.eventid AS EventID, e.eventname AS EventName, e.shortname AS ShortName, e.city AS City, s.section AS Region, s.prefix AS RegionPrefix, CONCAT('https://www.curlingzone.com/forums/images/flag/', e.sectionid, '_flag.gif') AS CountryFlag, e.startdate AS LocalStartDate, e.enddate AS LocalEndDate, x.offset AS LocalUTC
@@ -203,7 +203,7 @@ class EventInfoViewset(viewsets.ViewSet):
             INNER JOIN eventweek_event AS w ON w.eventid = e.eventid AND w.eventtypeid = l.eventtypeid
             INNER JOIN section AS s ON s.sectionid = e.sectionid
             INNER JOIN timezone AS x ON x.timezoneid = e.timezoneid
-            WHERE (l.eventtypeid = 81 OR l.eventtypeid = 82 OR l.eventtypeid = 85) AND e.eventyear = 2024
+            WHERE (l.eventtypeid = 81 OR l.eventtypeid = 82 OR l.eventtypeid = 85)
             AND e.startdate >= '%s' AND e.startdate <= '%s'
             ORDER BY EventTypeID ASC, EventWeek ASC
         """
