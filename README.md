@@ -50,3 +50,12 @@ The following details how to deploy this application.
 ### Docker
 
 See detailed [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html).
+
+### Local Docker
+Execute the following command:
+`docker-compose up -d`
+This will spin up 2 containers:
+  - MySql
+  - Django
+
+I populated the MySql database with the replicated CZ data.  The Django models and viewsets should be read-only at the moment to make integration less risky.
