@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Player, Team, Event, Eventlink, Tournamenttype, Tournament, Tournamentdraw, Clubs
+from .models import Player, Team, Event, Eventlink, Tournamenttype, Tournament, Tournamentdraw, Clubs, Scoregame, Tournamentgame
 from django.db import models
 from django.urls import reverse, NoReverseMatch
 
@@ -317,6 +317,64 @@ class TournamentdrawDetailSerializer(serializers.HyperlinkedModelSerializer):
 class EventQueryParamsSerializer(serializers.Serializer):
     start_date_begin = serializers.DateField(required=False)
     start_date_end = serializers.DateField(required=False)
+
+class ScoreGameListSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Scoregame
+        fields = ['gameid', 'drawid', 'teamid1', 'teamid2', 'numends', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:scoregame-detail', 'lookup_field': 'gameid'}
+        }
+
+
+class ScoreGameDetailSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Scoregame
+        fields = '__all__'
+        extra_kwargs = {
+            'url': {'view_name': 'api:scoregame-detail', 'lookup_field': 'gameid'}
+        }
+
+
+class TournamentGameListSerializer(serializers.HyperlinkedModelSerializer):
+    tournamentid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournament-detail',
+        lookup_field='tournamentid',
+        queryset=Tournament.objects.all()
+    )
+    gameid = serializers.HyperlinkedRelatedField(
+        view_name='api:scoregame-detail',
+        lookup_field='gameid',
+        queryset=Scoregame.objects.all()
+    )
+    
+    class Meta:
+        model = Tournamentgame
+        fields = ['tournamentid', 'gameid', 'gamelinkid', 'url']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamentgame-detail', 'lookup_field': 'id'}
+        }
+
+
+class TournamentGameDetailSerializer(serializers.HyperlinkedModelSerializer):
+    tournamentid = serializers.HyperlinkedRelatedField(
+        view_name='api:tournament-detail',
+        lookup_field='tournamentid',
+        queryset=Tournament.objects.all()
+    )
+    gameid = serializers.HyperlinkedRelatedField(
+        view_name='api:scoregame-detail',
+        lookup_field='gameid',
+        queryset=Scoregame.objects.all()
+    )
+    
+    class Meta:
+        model = Tournamentgame
+        fields = ['tournamentid', 'gameid', 'gamelinkid']
+        extra_kwargs = {
+            'url': {'view_name': 'api:tournamentgame-detail', 'lookup_field': 'id'}
+        }
+
 
 class EventDataSerializer(serializers.Serializer):
     EventType = serializers.CharField(max_length=100)
