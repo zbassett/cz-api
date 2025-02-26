@@ -27,12 +27,14 @@ from drf_spectacular.types import OpenApiTypes
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from .models import Player, Team, Event, Clubs, Tournamenttype, Tournament, Tournamentdraw
+from .models import Player, Team, Event, Clubs, Tournamenttype, Tournament, Tournamentdraw, Scoregame, Tournamentgame
 from .serializers import (
     PlayerListSerializer, PlayerDetailSerializer, TeamListSerializer, TeamDetailSerializer,
     EventListSerializer, EventDetailSerializer, 
     ClubsListSerializer, ClubsDetailSerializer, TournamenttypeListSerializer, TournamenttypeDetailSerializer,
     TournamentListSerializer, TournamentDetailSerializer, TournamentdrawListSerializer, TournamentdrawDetailSerializer,
+    ScoreGameListSerializer, ScoreGameDetailSerializer, 
+    TournamentGameListSerializer, TournamentGameDetailSerializer,
     EventQueryParamsSerializer, EventDataSerializer
 )
 from .filters import ClubsFilter
@@ -131,8 +133,412 @@ class TournamentdrawModelViewSet(viewsets.ModelViewSet):
         elif self.action == 'retrieve':
             return TournamentdrawDetailSerializer
         return TournamentdrawDetailSerializer
-    
 
+
+class ScoreGameModelViewSet(viewsets.ModelViewSet):
+    queryset = Scoregame.objects.all()
+    lookup_field = 'gameid'
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ScoreGameListSerializer
+        elif self.action == 'retrieve':
+            return ScoreGameDetailSerializer
+        return ScoreGameDetailSerializer
+
+
+class TournamentGameModelViewSet(viewsets.ModelViewSet):
+    queryset = Tournamentgame.objects.all()
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TournamentGameListSerializer
+        elif self.action == 'retrieve':
+            return TournamentGameDetailSerializer
+        return TournamentGameDetailSerializer
+
+
+class CurrentEventsViewSet(viewsets.ViewSet):
+    """Retrieve events that are currently happening (today is between start and end date)"""
+    
+    @extend_schema(
+        description="Get tournaments/events that are currently active",
+        responses={200: EventListSerializer(many=True)}
+    )
+    def list(self, request):
+        today = datetime.now().date()
+        current_events = Event.objects.filter(
+            startdate__lte=today,
+            enddate__gte=today
+        ).order_by('startdate')
+        
+        serializer = EventListSerializer(
+            current_events, 
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+
+class UpcomingEventsViewSet(viewsets.ViewSet):
+    """Retrieve events that will start in the next 30 days"""
+    
+    @extend_schema(
+        description="Get tournaments/events that will start in the next 30 days",
+        responses={200: EventListSerializer(many=True)}
+    )
+    def list(self, request):
+        today = datetime.now().date()
+        thirty_days_ahead = today + timedelta(days=30)
+        
+        upcoming_events = Event.objects.filter(
+            startdate__gt=today,
+            startdate__lte=thirty_days_ahead
+        ).order_by('startdate')
+        
+        serializer = EventListSerializer(
+            upcoming_events, 
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+
+class LiveGamesViewSet(viewsets.ViewSet):
+    """Retrieve games that are currently in progress"""
+    
+    @extend_schema(
+        description="Get games that are currently in progress",
+        responses={200: ScoreGameListSerializer(many=True)}
+    )
+    def list(self, request):
+        # This is a basic implementation. In a real system, you'd have a field 
+        # indicating if a game is live/in-progress
+        # For now, we'll simulate this by looking at games from tournaments happening today
+        
+        today = datetime.now().date()
+        
+        # Find events happening today
+        current_events = Event.objects.filter(
+            startdate__lte=today,
+            enddate__gte=today
+        )
+        
+        # Get IDs for tournament draws associated with these events
+        tournament_ids = []
+        for event in current_events:
+            tournament_ids.extend(list(Tournament.objects.filter(eventid=event.eventid).values_list('tournamentid', flat=True)))
+        
+        # Get games associated with these tournaments
+        tournament_games = Tournamentgame.objects.filter(tournamentid__in=tournament_ids)
+        game_ids = tournament_games.values_list('gameid', flat=True)
+        
+        # Get the actual games
+        live_games = Scoregame.objects.filter(gameid__in=game_ids)
+        
+        serializer = ScoreGameListSerializer(
+            live_games, 
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+
+class RecentResultsViewSet(viewsets.ViewSet):
+    """Retrieve games that have recently completed"""
+    
+    @extend_schema(
+        description="Get games that have recently completed",
+        responses={200: ScoreGameListSerializer(many=True)}
+    )
+    def list(self, request):
+        # Similar to live games, we need to simulate this
+        # In a real system, you'd have a completion date/time field
+        
+        today = datetime.now().date()
+        seven_days_ago = today - timedelta(days=7)
+        
+        # Find events that ended in the last 7 days
+        recent_events = Event.objects.filter(
+            enddate__gte=seven_days_ago,
+            enddate__lt=today
+        )
+        
+        # Get IDs for tournaments associated with these events
+        tournament_ids = []
+        for event in recent_events:
+            tournament_ids.extend(list(Tournament.objects.filter(eventid=event.eventid).values_list('tournamentid', flat=True)))
+        
+        # Get games associated with these tournaments
+        tournament_games = Tournamentgame.objects.filter(tournamentid__in=tournament_ids)
+        game_ids = tournament_games.values_list('gameid', flat=True)
+        
+        # Get the actual games
+        recent_games = Scoregame.objects.filter(gameid__in=game_ids)
+        
+        serializer = ScoreGameListSerializer(
+            recent_games, 
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+
+class EventScheduleViewSet(viewsets.ViewSet):
+    """Retrieve the schedule of games for a specific event"""
+    
+    @extend_schema(
+        description="Get the schedule of games for a specific event",
+        parameters=[
+            OpenApiParameter(name="event_id", description="ID of the event", required=True, type=int)
+        ],
+        responses={200: ScoreGameListSerializer(many=True)}
+    )
+    def list(self, request):
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return Response(
+                {"error": "event_id parameter is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Find tournaments for this event
+            tournaments = Tournament.objects.filter(eventid=event_id)
+            tournament_ids = tournaments.values_list('tournamentid', flat=True)
+            
+            # Find games in these tournaments
+            tournament_games = Tournamentgame.objects.filter(tournamentid__in=tournament_ids)
+            game_ids = tournament_games.values_list('gameid', flat=True)
+            
+            # Get the actual games
+            games = Scoregame.objects.filter(gameid__in=game_ids)
+            
+            serializer = ScoreGameListSerializer(
+                games, 
+                many=True,
+                context={'request': request}
+            )
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class PlayerStatsViewSet(viewsets.ViewSet):
+    """Get statistics for a specific player"""
+    
+    @extend_schema(
+        description="Get statistics for a specific player",
+        parameters=[
+            OpenApiParameter(name="player_id", description="ID of the player", required=True, type=int)
+        ],
+        responses={200: dict}
+    )
+    def list(self, request):
+        player_id = request.query_params.get('player_id')
+        if not player_id:
+            return Response(
+                {"error": "player_id parameter is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            player = Player.objects.get(pk=player_id)
+            
+            # Find teams where this player is a member
+            teams = Team.objects.filter(
+                models.Q(skip=player) |
+                models.Q(fourth=player) |
+                models.Q(third=player) |
+                models.Q(second=player) |
+                models.Q(lead=player) |
+                models.Q(spare=player)
+            ).distinct()
+            
+            team_ids = teams.values_list('teamid', flat=True)
+            
+            # Find games where these teams played
+            games_as_team1 = Scoregame.objects.filter(teamid1__in=team_ids)
+            games_as_team2 = Scoregame.objects.filter(teamid2__in=team_ids)
+            
+            total_games = games_as_team1.count() + games_as_team2.count()
+            
+            # In a real system, you'd calculate wins, losses, and other stats
+            # For this demo, we'll return basic stats
+            results = {
+                "player": {
+                    "playerid": player.playerid,
+                    "name": f"{player.firstname} {player.lastname}",
+                    "position": "Varies" # In reality, you'd determine their primary position
+                },
+                "stats": {
+                    "total_games": total_games,
+                    "teams": team_ids.count(),
+                    # Additional stats would be calculated here in a real system
+                }
+            }
+            
+            return Response(results)
+            
+        except Player.DoesNotExist:
+            return Response(
+                {"error": f"Player with ID {player_id} not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class TeamStatsViewSet(viewsets.ViewSet):
+    """Get statistics for a specific team"""
+    
+    @extend_schema(
+        description="Get statistics for a specific team",
+        parameters=[
+            OpenApiParameter(name="team_id", description="ID of the team", required=True, type=int)
+        ],
+        responses={200: dict}
+    )
+    def list(self, request):
+        team_id = request.query_params.get('team_id')
+        if not team_id:
+            return Response(
+                {"error": "team_id parameter is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            team = Team.objects.get(pk=team_id)
+            
+            # Find games for this team
+            games_as_team1 = Scoregame.objects.filter(teamid1=team_id)
+            games_as_team2 = Scoregame.objects.filter(teamid2=team_id)
+            
+            total_games = games_as_team1.count() + games_as_team2.count()
+            
+            # Get player details
+            players = {
+                "skip": team.skip.firstname + " " + team.skip.lastname if team.skip else "Unknown",
+                "fourth": team.fourth.firstname + " " + team.fourth.lastname if team.fourth else "Unknown",
+                "third": team.third.firstname + " " + team.third.lastname if team.third else "Unknown",
+                "second": team.second.firstname + " " + team.second.lastname if team.second else "Unknown",
+                "lead": team.lead.firstname + " " + team.lead.lastname if team.lead else "Unknown"
+            }
+            
+            if team.spare:
+                players["spare"] = team.spare.firstname + " " + team.spare.lastname
+            
+            # In a real system, you'd calculate wins, losses, and other stats
+            results = {
+                "team": {
+                    "teamid": team.teamid,
+                    "name": str(team),
+                    "city": team.city if team.city else "Unknown",
+                    "players": players
+                },
+                "stats": {
+                    "total_games": total_games,
+                    # Additional stats would be calculated here in a real system
+                }
+            }
+            
+            return Response(results)
+            
+        except Team.DoesNotExist:
+            return Response(
+                {"error": f"Team with ID {team_id} not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class StandingsViewSet(viewsets.ViewSet):
+    """Get standings for a specific event"""
+    
+    @extend_schema(
+        description="Get standings for a specific event",
+        parameters=[
+            OpenApiParameter(name="event_id", description="ID of the event", required=True, type=int)
+        ],
+        responses={200: dict}
+    )
+    def list(self, request):
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return Response(
+                {"error": "event_id parameter is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            event = Event.objects.get(pk=event_id)
+            
+            # Find tournaments for this event
+            tournaments = Tournament.objects.filter(eventid=event_id)
+            
+            # For each tournament, collect team records
+            standings = []
+            
+            for tournament in tournaments:
+                # Get teams in this tournament
+                tournament_games = Tournamentgame.objects.filter(tournamentid=tournament.tournamentid)
+                game_ids = tournament_games.values_list('gameid', flat=True)
+                
+                # Get unique teams from these games
+                team_ids = set()
+                for game in Scoregame.objects.filter(gameid__in=game_ids):
+                    team_ids.add(game.teamid1)
+                    team_ids.add(game.teamid2)
+                
+                # For each team, calculate basic stats
+                for team_id in team_ids:
+                    if team_id == 0:  # Skip placeholder teams
+                        continue
+                        
+                    team = Team.objects.get(pk=team_id)
+                    
+                    # Get games for this team in this tournament
+                    team_games = Scoregame.objects.filter(
+                        models.Q(teamid1=team_id) | models.Q(teamid2=team_id),
+                        gameid__in=game_ids
+                    )
+                    
+                    # In a real system, you'd calculate wins and losses
+                    # For this demo, we'll just provide counts
+                    standings.append({
+                        "team": {
+                            "teamid": team.teamid,
+                            "name": str(team),
+                            "city": team.city if team.city else "Unknown"
+                        },
+                        "tournament": tournament.tournamentname,
+                        "games_played": team_games.count(),
+                        # Wins, losses, and other stats would be calculated here
+                    })
+            
+            return Response(standings)
+            
+        except Event.DoesNotExist:
+            return Response(
+                {"error": f"Event with ID {event_id} not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 
